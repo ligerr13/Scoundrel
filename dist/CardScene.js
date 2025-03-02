@@ -48,14 +48,14 @@ class CardScene extends THREE.Object3D {
         this.suit = suit;
         this.rank = rank;
         this.geometry = new THREE.PlaneGeometry(0.57 * 2, 0.88 * 2);
-        this.material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+        this.material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, side: THREE.DoubleSide });
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.add(this.mesh);
         this.loadTexture();
     }
     loadTexture() {
         const textureLoader = new THREE.TextureLoader();
-        textureLoader.load('./assets/cards.png', (texture) => {
+        textureLoader.load('../src/assets/cards.png', (texture) => {
             texture.needsUpdate = true;
             const cols = 13;
             const rows = 4;
@@ -78,6 +78,8 @@ class CardScene extends THREE.Object3D {
         console.log(`CardScene is ready: Suit=${this.suit}, Rank=${this.rank}`);
     }
     Update(delta) {
+        // this.mesh.rotation.x += 1 * delta;
+        this.mesh.rotation.y += 1 * delta;
     }
     Render() {
     }

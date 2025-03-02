@@ -34,84 +34,54 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const THREE = __importStar(require("three"));
-const game_loop_1 = require("./game_loop");
-const card_scene_1 = require("./card_scene");
-const game_loop = game_loop_1.GameLoop.get_instance();
+const process_1 = require("./process");
+const card_1 = require("./card");
+const event_manager_1 = require("./event_manager");
+const game_loop = process_1.Process.get_instance();
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const pointer = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
+camera.position.set(0, 0, 5);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-camera.position.z = 4;
 document.body.appendChild(renderer.domElement);
-const MouseMove = (event) => {
+const mouseMove = (event) => {
     event.preventDefault();
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    const intersects = raycaster.intersectObjects(scene.children);
+    const intersects = raycaster.intersectObjects(scoundrel.children);
     if (intersects.length > 0) {
         const hoveredObject = intersects[0].object;
-        if (scene.intersected != hoveredObject) {
-            scene.intersected = hoveredObject;
-            if (scene.intersected) {
-                if (scene.intersected.parent) {
-                    scene.events.notify(EVENTS.MOUSE_ENTERED, scene.intersected.parent.id);
+        if (scoundrel.intersected != hoveredObject) {
+            scoundrel.intersected = hoveredObject;
+            if (scoundrel.intersected) {
+                if (scoundrel.intersected.parent) {
+                    scoundrel.events.notify(event_manager_1.EventType.MOUSE_ENTERED, scoundrel.intersected.id);
                 }
             }
         }
     }
     else {
-        if (scene.intersected) {
-            if (scene.intersected.parent) {
-                scene.events.notify(EVENTS.MOUSE_EXITED, scene.intersected.parent.id);
+        if (scoundrel.intersected) {
+            if (scoundrel.intersected.parent) {
+                scoundrel.events.notify(event_manager_1.EventType.MOUSE_EXITED, scoundrel.intersected.id);
             }
         }
-        scene.intersected = null;
+        scoundrel.intersected = null;
     }
 };
-const EVENTS = {
-    MOUSE_ENTERED: "mouse.entered",
-    MOUSE_EXITED: "mouse.exited",
-};
-class EventManager {
-    constructor() {
-        this.listeners = new Map();
-    }
-    subscribe(eventType, listener) {
-        var _a;
-        if (!this.listeners.has(eventType)) {
-            this.listeners.set(eventType, []);
-        }
-        (_a = this.listeners.get(eventType)) === null || _a === void 0 ? void 0 : _a.push(listener);
-    }
-    unsubscribe(eventType, listener) {
-        const listeners = this.listeners.get(eventType);
-        if (listeners) {
-            const index = listeners.indexOf(listener);
-            if (index !== -1) {
-                listeners.splice(index, 1);
-            }
-        }
-    }
-    notify(eventType, data) {
-        const listeners = this.listeners.get(eventType);
-        if (listeners) {
-            listeners.forEach(listener => listener.Update(data));
-        }
-    }
-}
-class OnMouseEntered {
-    Update(id) {
-        const entity = scene.GetEntity(id);
+class onMouseEntered {
+    update(id) {
+        const entity = scoundrel.getChild(id);
         if (entity && "onMouseEntered" in entity) {
             entity.onMouseEntered();
         }
     }
 }
-class OnMouseExited {
-    Update(id) {
-        const entity = scene.GetEntity(id);
+class onMouseExited {
+    update(id) {
+        const entity = scoundrel.getChild(id);
         if (entity && "onMouseExited" in entity) {
             entity.onMouseExited();
         }
@@ -120,11 +90,13 @@ class OnMouseExited {
 class Scoundrel extends THREE.Scene {
     constructor() {
         super();
-        this.events = new EventManager();
+        this.events = new event_manager_1.EventManager();
         this.entities = new Map();
         this.intersected = null;
+        this.events.subscribe(event_manager_1.EventType.MOUSE_ENTERED, new onMouseEntered());
+        this.events.subscribe(event_manager_1.EventType.MOUSE_EXITED, new onMouseExited());
     }
-    AddChild(entity) {
+    addChild(entity) {
         if (entity) {
             const entityId = entity.id;
             if (entityId) {
@@ -133,27 +105,32 @@ class Scoundrel extends THREE.Scene {
         }
         this.add(entity);
     }
-    UpdateEntities(delta) {
+    updateEntities(delta) {
         this.entities.forEach(entity => {
-            if (typeof entity.Update === 'function') {
-                entity.Update(delta);
+            if (typeof entity.update === 'function') {
+                entity.update(delta);
             }
         });
     }
-    GetEntity(id) {
+    getChild(id) {
         return this.entities.get(id);
     }
+    getChildren() {
+        return this.entities;
+    }
 }
-const scene = new Scoundrel();
-scene.events.subscribe(EVENTS.MOUSE_ENTERED, new OnMouseEntered());
-scene.events.subscribe(EVENTS.MOUSE_EXITED, new OnMouseExited());
-const card = new card_scene_1.CardScene(card_scene_1.Suit.HEARTS, 1);
-scene.AddChild(card);
-window.addEventListener('mousemove', MouseMove);
+const scoundrel = new Scoundrel();
+const card = new card_1.CardScene(card_1.Suit.HEARTS, 1);
+const card_2 = new card_1.CardScene(card_1.Suit.HEARTS, 2);
+const card_23 = new card_1.CardScene(card_1.Suit.HEARTS, 3);
+scoundrel.addChild(card);
+scoundrel.addChild(card_2);
+scoundrel.addChild(card_23);
+window.addEventListener('mousemove', mouseMove);
 game_loop.Start((delta) => {
-    scene.UpdateEntities(delta);
+    scoundrel.updateEntities(delta);
 }, () => {
     raycaster.setFromCamera(pointer, camera);
-    renderer.render(scene, camera);
+    renderer.render(scoundrel, camera);
 });
 //# sourceMappingURL=scoundrel.js.map

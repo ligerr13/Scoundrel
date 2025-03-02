@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GameLoop = void 0;
-class GameLoop {
+exports.Process = void 0;
+class Process {
     constructor() {
         /* Settings */
         this.PHYSICS_FPS = 60;
@@ -54,7 +54,7 @@ class GameLoop {
     }
     static get_instance() {
         if (!this.instance) {
-            this.instance = new GameLoop();
+            this.instance = new Process();
         }
         return this.instance;
     }
@@ -71,5 +71,5 @@ class GameLoop {
         this.target_fps = Math.min(Math.max(fps, this.MIN_FPS), this.MAX_FPS);
     }
 }
-exports.GameLoop = GameLoop;
-//# sourceMappingURL=game_loop.js.map
+exports.Process = Process;
+//# sourceMappingURL=process.js.map

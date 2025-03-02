@@ -1,5 +1,5 @@
 
-export class GameLoop {
+export class Process {
     /* Settings */
     private readonly PHYSICS_FPS = 60;
     private readonly MIN_FPS = 20;
@@ -15,7 +15,7 @@ export class GameLoop {
     public last_time_stamp: number = 0.0;
     
     /* Singleton instance */
-    private static instance: GameLoop;
+    private static instance: Process;
     
     private constructor() {}
     
@@ -70,9 +70,9 @@ export class GameLoop {
         requestAnimationFrame(loop);
     }
 
-    public static get_instance(): GameLoop {
+    public static get_instance(): Process {
         if (!this.instance) {
-            this.instance = new GameLoop();
+            this.instance = new Process();
         }
         return this.instance;
     }

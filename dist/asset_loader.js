@@ -33,52 +33,25 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CardScene = exports.Suit = void 0;
+exports.loader = void 0;
+exports.texturePromise = texturePromise;
 const THREE = __importStar(require("three"));
-var Suit;
-(function (Suit) {
-    Suit[Suit["HEARTS"] = 0] = "HEARTS";
-    Suit[Suit["DIAMONDS"] = 1] = "DIAMONDS";
-    Suit[Suit["SPADES"] = 2] = "SPADES";
-    Suit[Suit["CLUBS"] = 3] = "CLUBS";
-})(Suit || (exports.Suit = Suit = {}));
-class CardScene extends THREE.Mesh {
-    constructor() {
-        super();
-        this._suit = null;
-        this._rank = null;
-        this.geometry = new THREE.PlaneGeometry(0.57 * 2, 0.88 * 2);
-        this.material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, side: THREE.DoubleSide });
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
+const manager = new THREE.LoadingManager();
+exports.loader = new THREE.TextureLoader(manager);
+function texturePromise(texture_path, texture_loader) {
+    let texture_promise;
+    if (texturePromise.texturePromises_cache[texture_path] !== undefined) {
+        return texturePromise.texturePromises_cache[texture_path];
     }
-    init(suit, rank) {
-        this._suit = suit;
-        this._rank = rank;
-        return this;
-    }
-    ready() {
-        console.log("Ready?");
-    }
-    update(delta) {
-        this.rotation.y += 1 * delta;
-    }
-    render() {
-    }
-    onMouseEntered() {
-        this.material.color.set(0xff0000);
-    }
-    onMouseExited() {
-        this.material.color.set(0xffffff);
-    }
-    get Suit() {
-        return this._suit;
-    }
-    get Rank() {
-        return this._rank;
-    }
-    get Texture() {
-        return this._texture;
-    }
+    texture_promise = new Promise((resolve, reject) => {
+        texture_loader.load(texture_path, (texture) => {
+            resolve(texture);
+        }, undefined, (error) => {
+            reject(new Error(`Could not load texture: ${texture_path}`));
+        });
+    });
+    texturePromise.texturePromises_cache[texture_path] = texture_promise;
+    return texture_promise;
 }
-exports.CardScene = CardScene;
-//# sourceMappingURL=card_scene.js.map
+texturePromise.texturePromises_cache = {};
+//# sourceMappingURL=asset_loader.js.map

@@ -1,96 +1,65 @@
 import * as THREE from 'three';
-import { GameLoop } from "./game_loop";
-import { CardScene, Suit } from "./card_scene";
+import { Process } from "./process";
+import { CardScene, Suit } from "./card";
 import { IEventListener, IHoverable } from './interfaces/entity';
+import { EventManager, EventType} from './event_manager';
 
-const game_loop = GameLoop.get_instance();
+
+const game_loop = Process.get_instance();
 const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({ antialias: true });
 const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const pointer = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 
+camera.position.set(0, 0, 5);
+
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-camera.position.z = 4;
 document.body.appendChild(renderer.domElement);
 
-const MouseMove = (event: MouseEvent) => {
+const mouseMove = (event: MouseEvent) => {
     event.preventDefault();
 
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    const intersects = raycaster.intersectObjects(scene.children);
+    const intersects = raycaster.intersectObjects(scoundrel.children);
 
     if (intersects.length > 0) {
         const hoveredObject = intersects[0].object;
-
-        if (scene.intersected != hoveredObject) 
+        if (scoundrel.intersected != hoveredObject) 
         {
-            scene.intersected = hoveredObject;
-            if (scene.intersected) {
-                if (scene.intersected.parent){
-                     scene.events.notify(EVENTS.MOUSE_ENTERED, scene.intersected.parent.id);
+            scoundrel.intersected = hoveredObject;
+            if (scoundrel.intersected) {
+                if (scoundrel.intersected.parent){
+                     scoundrel.events.notify(EventType.MOUSE_ENTERED, scoundrel.intersected.id);
                 }
                 
             }
         }
     } 
     else {
-        if (scene.intersected) {
-            if (scene.intersected.parent) {
-                scene.events.notify(EVENTS.MOUSE_EXITED, scene.intersected.parent.id);
+        if (scoundrel.intersected) {
+            if (scoundrel.intersected.parent) {
+                scoundrel.events.notify(EventType.MOUSE_EXITED, scoundrel.intersected.id);
             }
         }
-        scene.intersected = null
+        scoundrel.intersected = null
     }
 };
 
-const EVENTS = {
-    MOUSE_ENTERED: "mouse.entered",
-    MOUSE_EXITED: "mouse.exited",
-} as const;
-
-class EventManager {
-    private listeners: Map<string, IEventListener[]> = new Map();
-
-    subscribe(eventType: string, listener: IEventListener): void {
-        if (!this.listeners.has(eventType)) {
-            this.listeners.set(eventType, []);
-        }
-        this.listeners.get(eventType)?.push(listener);
-    }
-
-    unsubscribe(eventType: string, listener: IEventListener): void {
-        const listeners = this.listeners.get(eventType);
-        if (listeners) {
-            const index = listeners.indexOf(listener);
-            if (index !== -1) {
-                listeners.splice(index, 1);
-            }
-        }
-    }
-
-    notify(eventType: string, data: any): void {
-        const listeners = this.listeners.get(eventType);
-        if (listeners) {
-            listeners.forEach(listener => listener.Update(data));
-        }
-    }
-}
-
-class OnMouseEntered implements IEventListener {
-    Update(id: any): void {
-        const entity = scene.GetEntity(id);
+class onMouseEntered implements IEventListener {
+    update(id: any): void {
+        const entity = scoundrel.getChild(id);
         if (entity && "onMouseEntered" in entity) {
             (entity as unknown as IHoverable).onMouseEntered();
         }
     }
 }
 
-class OnMouseExited implements IEventListener {
-    Update(id: any): void {
-        const entity = scene.GetEntity(id);
+class onMouseExited implements IEventListener {
+    update(id: any): void {
+        const entity = scoundrel.getChild(id);
         if (entity && "onMouseExited" in entity) {
             (entity as unknown as IHoverable).onMouseExited();
         }
@@ -104,9 +73,15 @@ class Scoundrel extends THREE.Scene {
 
     constructor() {
         super();
+
+        this.events.subscribe(EventType.MOUSE_ENTERED, 
+            new onMouseEntered());
+        
+        this.events.subscribe(EventType.MOUSE_EXITED, 
+            new onMouseExited());
     }
 
-    public AddChild(entity: THREE.Object3D) {
+    public addChild(entity: THREE.Object3D) {
         if (entity) {
             const entityId = (entity as any).id;
 
@@ -117,34 +92,37 @@ class Scoundrel extends THREE.Scene {
         this.add(entity);
     }
 
-    public UpdateEntities(delta: number) {
+    public updateEntities(delta: number) {
         this.entities.forEach(entity => {
-            if (typeof (entity as any).Update === 'function') {
-                (entity as any).Update(delta);
+            if (typeof (entity as any).update === 'function') {
+                (entity as any).update(delta);
             }
         });
     }
 
-    public GetEntity(id: number): THREE.Object3D | undefined {
+    public getChild(id: number): THREE.Object3D | null | undefined {
         return this.entities.get(id);
+    }
+
+    public getChildren(): Map<number, THREE.Object3D> | null {
+        return this.entities
     }
 }
 
-const scene = new Scoundrel();
+const scoundrel = new Scoundrel();
+const card: CardScene = new CardScene(Suit.HEARTS, 1)
+const card_2: CardScene = new CardScene(Suit.HEARTS, 2)
+const card_23: CardScene = new CardScene(Suit.HEARTS, 3)
 
-scene.events.subscribe(EVENTS.MOUSE_ENTERED, new OnMouseEntered());
-scene.events.subscribe(EVENTS.MOUSE_EXITED, new OnMouseExited());
+scoundrel.addChild(card);
+scoundrel.addChild(card_2);
+scoundrel.addChild(card_23);
 
-const card: CardScene = new CardScene(Suit.HEARTS, 1);
-
-scene.AddChild(card);
-
-
-window.addEventListener('mousemove', MouseMove);
+window.addEventListener('mousemove', mouseMove);
 
 game_loop.Start((delta) => {
-    scene.UpdateEntities(delta);
+    scoundrel.updateEntities(delta);
 }, () => {
     raycaster.setFromCamera( pointer, camera );
-    renderer.render(scene, camera);
+    renderer.render(scoundrel, camera);
 });

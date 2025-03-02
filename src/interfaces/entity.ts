@@ -1,11 +1,11 @@
 export interface IEntity {
-    Ready(): void;
-    Render(): void;
-    Update(delta: number): void;
+    ready(): void;
+    render(): void;
+    update(delta: number): void;
 }
 
 export interface IEventListener {
-    Update(data: any): void;
+    update(data: any): void;
 }
 
 export interface IHoverable {

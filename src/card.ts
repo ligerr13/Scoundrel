@@ -1,85 +1,91 @@
 import * as THREE from 'three'
-import { IEntity } from "./interfaces/entity";
+import { IEntity, IHoverable } from './interfaces/entity';
+import { texturePromise, loader, SubTexture} from './asset_loader'
 
-export enum  SuitType {
-    HEARTS = 1,
-    DIAMONDS = 2, 
-    SPADES = 3,
-    CLUBS = 4,
+
+const CARD_TEXTURE_MAP: string = '../src/assets/cards.png'
+
+export enum Suit {
+    HEARTS = 0,
+    DIAMONDS = 1,
+    SPADES = 2,
+    CLUBS = 3
 }
 
-export abstract class Card implements IEntity{
-    private suit: number;
-    private rank: number;
-    private id: number;
+export class CardScene extends THREE.Mesh implements IEntity, IHoverable {
+    public geometry: THREE.PlaneGeometry;
+    public material: THREE.MeshBasicMaterial;
 
-    geometry: THREE.BoxGeometry = new THREE.BoxGeometry( 0.57 * 2, 0.88 * 2, 0.02);
-    material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00});
-    cube: THREE.Mesh = new THREE.Mesh( this.geometry, this.material );
+    private _suit: Suit;
+    private _rank: number;
 
-    constructor(_suit: number = 1, _rank: number = 1){
-        this.suit = _suit;
-        this.rank = _rank;
-        // scene.add( this.cube );
-        this.id = this.cube.id;
-    }
-    
-    abstract use_card(): void;
-    
-    Ready(): void {
+    private _texture?: THREE.Texture | undefined | null
+
+    constructor(suit: Suit, rank: number) {
+        super();
+        this.geometry = new THREE.PlaneGeometry(0.57 * 2, 0.88 * 2);
+        this.material = new THREE.MeshBasicMaterial({
+            map: null,
+            color: 0xffffff, 
+            transparent: true, 
+            side: THREE.DoubleSide
+        });
+
+        this._suit = suit;
+        this._rank = rank;
         
+        this.position.set(
+            THREE.MathUtils.randFloat(-2, 2),
+            THREE.MathUtils.randFloat(-2, 2),
+            0
+        );
+
+        const card_mesh_promise = texturePromise(CARD_TEXTURE_MAP, loader);
+
+        card_mesh_promise.then((texture) => {
+            
+                const sprite_size = new THREE.Vector2(524, 751);
+                const coords = new THREE.Vector2(suit, rank);
+                const subTexture = SubTexture.createFromCoords(texture, coords, sprite_size);
+
+                this._texture = subTexture;
+                this.ready();
+            })
+            .catch((error) => {
+                console.error('Failed to load texture:', error);
+            });
     }
-    
-    Render(): void {
-    }
 
-    Update(delta: number): void {
-        this.cube.rotation.x += 1 * delta;
-        this.cube.rotation.y += 1 * delta;
-    }
-
-    __str__(): string {
-        return `${this.constructor.name} - Suit: ${this.suit}, Rank: ${this.rank}`;
-    }
-
-    public get Suit(): number {
-        return this.suit
-    }
-
-    public get Rank(): number {
-        return this.rank
-    }
-
-    public get Id(): number {
-        return this.id;
-    }
-}
-
-export class MonsterCard extends Card {
-    use_card() : void {}
-}
-export class WeaponCard extends Card {
-    use_card() : void {}
-}
-export class PotionCard extends Card {
-    use_card() : void {}
-}
-
-export class CardFactory {
-    public static create(suit: number, rank: number): Card {
-        switch (suit) {
-            case 4:
-            case 3:
-                return new MonsterCard(suit, rank);
-
-            case 2:
-                return new WeaponCard(suit, rank);
-
-            case 1:
-                return new PotionCard(suit, rank);
-
-            default:
-                throw new Error("Invalid card type");
+    public ready(): void {
+        if (this._texture) {
+            this.material.map = this._texture;
+            this.material.needsUpdate = true;
         }
+    }
+
+    public update(delta: number): void {
+        this.rotation.y += 1 * delta;
+    }
+
+    public render(): void {}
+
+    public onMouseEntered(): void {
+        this.material.color.set(0xff0000);
+    }
+
+    public onMouseExited(): void {
+        this.material.color.set(0xffffff);
+    }
+
+    public get Suit(): number | null {
+        return this._suit;
+    }
+
+    public get Rank(): number | null {
+        return this._rank;
+    }
+
+    public get Texture(): THREE.Texture | undefined | null {
+        return this._texture;
     }
 }

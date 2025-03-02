@@ -33,73 +33,67 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CardFactory = exports.PotionCard = exports.WeaponCard = exports.MonsterCard = exports.Card = exports.SuitType = void 0;
+exports.CardScene = exports.Suit = void 0;
 const THREE = __importStar(require("three"));
-var SuitType;
-(function (SuitType) {
-    SuitType[SuitType["HEARTS"] = 1] = "HEARTS";
-    SuitType[SuitType["DIAMONDS"] = 2] = "DIAMONDS";
-    SuitType[SuitType["SPADES"] = 3] = "SPADES";
-    SuitType[SuitType["CLUBS"] = 4] = "CLUBS";
-})(SuitType || (exports.SuitType = SuitType = {}));
-class Card {
-    constructor(_suit = 1, _rank = 1) {
-        this.geometry = new THREE.BoxGeometry(0.57 * 2, 0.88 * 2, 0.02);
-        this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        this.cube = new THREE.Mesh(this.geometry, this.material);
-        this.suit = _suit;
-        this.rank = _rank;
-        // scene.add( this.cube );
-        this.id = this.cube.id;
+const asset_loader_1 = require("./asset_loader");
+const CARD_TEXTURE_MAP = '../src/assets/cards.png';
+var Suit;
+(function (Suit) {
+    Suit[Suit["HEARTS"] = 0] = "HEARTS";
+    Suit[Suit["DIAMONDS"] = 1] = "DIAMONDS";
+    Suit[Suit["SPADES"] = 2] = "SPADES";
+    Suit[Suit["CLUBS"] = 3] = "CLUBS";
+})(Suit || (exports.Suit = Suit = {}));
+class CardScene extends THREE.Mesh {
+    constructor(suit, rank) {
+        super();
+        this.geometry = new THREE.PlaneGeometry(0.57 * 2, 0.88 * 2);
+        this.material = new THREE.MeshBasicMaterial({
+            map: null,
+            color: 0xffffff,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        this._suit = suit;
+        this._rank = rank;
+        this.position.set(THREE.MathUtils.randFloat(-2, 2), THREE.MathUtils.randFloat(-2, 2), 0);
+        const card_mesh_promise = (0, asset_loader_1.texturePromise)(CARD_TEXTURE_MAP, asset_loader_1.loader);
+        card_mesh_promise.then((texture) => {
+            const sprite_size = new THREE.Vector2(524, 751);
+            const coords = new THREE.Vector2(suit, rank);
+            const subTexture = asset_loader_1.SubTexture.createFromCoords(texture, coords, sprite_size);
+            this._texture = subTexture;
+            this.ready();
+        })
+            .catch((error) => {
+            console.error('Failed to load texture:', error);
+        });
     }
-    Ready() {
-    }
-    Render() {
-    }
-    Update(delta) {
-        this.cube.rotation.x += 1 * delta;
-        this.cube.rotation.y += 1 * delta;
-    }
-    __str__() {
-        return `${this.constructor.name} - Suit: ${this.suit}, Rank: ${this.rank}`;
-    }
-    get Suit() {
-        return this.suit;
-    }
-    get Rank() {
-        return this.rank;
-    }
-    get Id() {
-        return this.id;
-    }
-}
-exports.Card = Card;
-class MonsterCard extends Card {
-    use_card() { }
-}
-exports.MonsterCard = MonsterCard;
-class WeaponCard extends Card {
-    use_card() { }
-}
-exports.WeaponCard = WeaponCard;
-class PotionCard extends Card {
-    use_card() { }
-}
-exports.PotionCard = PotionCard;
-class CardFactory {
-    static create(suit, rank) {
-        switch (suit) {
-            case 4:
-            case 3:
-                return new MonsterCard(suit, rank);
-            case 2:
-                return new WeaponCard(suit, rank);
-            case 1:
-                return new PotionCard(suit, rank);
-            default:
-                throw new Error("Invalid card type");
+    ready() {
+        if (this._texture) {
+            this.material.map = this._texture;
+            this.material.needsUpdate = true;
         }
     }
+    update(delta) {
+        this.rotation.y += 1 * delta;
+    }
+    render() { }
+    onMouseEntered() {
+        this.material.color.set(0xff0000);
+    }
+    onMouseExited() {
+        this.material.color.set(0xffffff);
+    }
+    get Suit() {
+        return this._suit;
+    }
+    get Rank() {
+        return this._rank;
+    }
+    get Texture() {
+        return this._texture;
+    }
 }
-exports.CardFactory = CardFactory;
+exports.CardScene = CardScene;
 //# sourceMappingURL=card.js.map

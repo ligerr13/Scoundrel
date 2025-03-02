@@ -33,30 +33,104 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-const game_loop_1 = require("./game_loop");
 const THREE = __importStar(require("three"));
-const CardScene_1 = require("./CardScene");
-const game_loop = game_loop_1.GameLoop.get_instance();
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const process_1 = require("./process");
+const card_1 = require("./card");
+const event_manager_1 = require("./event_manager");
+const game_loop = process_1.Process.get_instance();
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const pointer = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 camera.position.z = 4;
 document.body.appendChild(renderer.domElement);
-const pointer = new THREE.Vector2();
-const mouse_raycast = new THREE.Raycaster();
-const _on_mouse_hover = (event) => {
+const mouseMove = (event) => {
     event.preventDefault();
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const intersects = raycaster.intersectObjects(scoundrel.children);
+    if (intersects.length > 0) {
+        const hoveredObject = intersects[0].object;
+        if (scoundrel.intersected != hoveredObject) {
+            scoundrel.intersected = hoveredObject;
+            if (scoundrel.intersected) {
+                if (scoundrel.intersected.parent) {
+                    scoundrel.events.notify(event_manager_1.EventType.MOUSE_ENTERED, scoundrel.intersected.id);
+                }
+            }
+        }
+    }
+    else {
+        if (scoundrel.intersected) {
+            if (scoundrel.intersected.parent) {
+                scoundrel.events.notify(event_manager_1.EventType.MOUSE_EXITED, scoundrel.intersected.id);
+            }
+        }
+        scoundrel.intersected = null;
+    }
 };
-window.addEventListener('mousemove', _on_mouse_hover);
-// const dungeon = new Dungeon();
-// const p1 = new Player(20);
-const card = new CardScene_1.CardScene(CardScene_1.Suit.HEARTS, 2);
-game_loop.start((delta) => {
+class onMouseEntered {
+    update(id) {
+        const entity = scoundrel.getChild(id);
+        if (entity && "onMouseEntered" in entity) {
+            entity.onMouseEntered();
+        }
+    }
+}
+class onMouseExited {
+    update(id) {
+        const entity = scoundrel.getChild(id);
+        if (entity && "onMouseExited" in entity) {
+            entity.onMouseExited();
+        }
+    }
+}
+class Scoundrel extends THREE.Scene {
+    constructor() {
+        super();
+        this.events = new event_manager_1.EventManager();
+        this.entities = new Map();
+        this.intersected = null;
+        this.events.subscribe(event_manager_1.EventType.MOUSE_ENTERED, new onMouseEntered());
+        this.events.subscribe(event_manager_1.EventType.MOUSE_EXITED, new onMouseExited());
+    }
+    addChild(entity) {
+        if (entity) {
+            const entityId = entity.id;
+            if (entityId) {
+                this.entities.set(entityId, entity);
+            }
+        }
+        this.add(entity);
+    }
+    updateEntities(delta) {
+        this.entities.forEach(entity => {
+            if (typeof entity.update === 'function') {
+                entity.update(delta);
+            }
+        });
+    }
+    getChild(id) {
+        return this.entities.get(id);
+    }
+    getChildren() {
+        return this.entities;
+    }
+}
+const scoundrel = new Scoundrel();
+const card = new card_1.CardScene(card_1.Suit.HEARTS, 2);
+const card_2 = new card_1.CardScene(card_1.Suit.HEARTS, 5);
+const card_23 = new card_1.CardScene(card_1.Suit.HEARTS, 7);
+scoundrel.addChild(card);
+scoundrel.addChild(card_2);
+scoundrel.addChild(card_23);
+window.addEventListener('mousemove', mouseMove);
+game_loop.Start((delta) => {
+    scoundrel.updateEntities(delta);
 }, () => {
-    renderer.render(scene, camera);
+    raycaster.setFromCamera(pointer, camera);
+    renderer.render(scoundrel, camera);
 });
 //# sourceMappingURL=scoundrel.js.map
