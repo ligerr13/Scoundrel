@@ -4,6 +4,7 @@ exports.EventManager = exports.EventType = void 0;
 exports.EventType = {
     MOUSE_ENTERED: "mouse.entered",
     MOUSE_EXITED: "mouse.exited",
+    MOUSE_CLICKED: "mouse.clicked",
 };
 class EventManager {
     constructor() {

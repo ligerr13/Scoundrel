@@ -62,43 +62,45 @@ class onClicked {
         }
     }
 }
-class Scoundrel extends THREE.Scene {
-    constructor() {
-        super();
-        this.events = new event_manager_1.EventManager();
-        this.entities = new Map();
-        this.intersected = null;
-        this.events.subscribe(event_manager_1.EventType.MOUSE_ENTERED, new onMouseEntered());
-        this.events.subscribe(event_manager_1.EventType.MOUSE_EXITED, new onMouseExited());
-        this.events.subscribe(event_manager_1.EventType.MOUSE_CLICKED, new onClicked());
-    }
-    addChild(entity) {
-        if (entity) {
-            const entityId = entity.id;
-            if (entityId) {
-                this.entities.set(entityId, entity);
-            }
-        }
-        this.add(entity);
-    }
-    updateEntities(delta) {
-        this.entities.forEach(entity => {
-            if (typeof entity.update === 'function') {
-                entity.update(delta);
-            }
-        });
-    }
-    getChild(id) {
-        return this.entities.get(id);
-    }
-    getChildren() {
-        return this.entities;
-    }
-}
+// class Scoundrel extends THREE.Scene {
+//     public events: EventManager = new EventManager();
+//     private entities: Map<number, THREE.Object3D> = new Map();
+//     public intersected?: THREE.Object3D | null = null;
+//     constructor() {
+//         super();
+//         this.events.subscribe(EventType.MOUSE_ENTERED, 
+//             new onMouseEntered());
+//         this.events.subscribe(EventType.MOUSE_EXITED, 
+//             new onMouseExited());
+//         this.events.subscribe(EventType.MOUSE_CLICKED,
+//             new onClicked());
+//     }
+//     public addChild(entity: THREE.Object3D) {
+//         if (entity) {
+//             const entityId = (entity as any).id;
+//             if (entityId) {
+//                 this.entities.set(entityId, entity);
+//             }
+//         }
+//         this.add(entity);
+//     }
+//     public updateEntities(delta: number) {
+//         this.entities.forEach(entity => {
+//             if (typeof (entity as any).update === 'function') {
+//                 (entity as any).update(delta);
+//             }
+//         });
+//     }
+//     public getChild(id: number): THREE.Object3D | null | undefined {
+//         return this.entities.get(id);
+//     }
+//     public getChildren(): Map<number, THREE.Object3D> | null {
+//         return this.entities
+//     }
+// }
 class Game {
     constructor() {
         this.game_loop = process_1.Process.get_instance();
-        this.dungeonDeck = new deck_1.Deck();
         this.dungeonScene = new deck_1.Dungeon();
         this.entities = new Map();
         this.events = new event_manager_1.EventManager();
@@ -107,7 +109,7 @@ class Game {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.pointer = new THREE.Vector2();
         this.raycaster = new THREE.Raycaster();
-        this.scoundrel = new Scoundrel();
+        this.scoundrel = new THREE.Scene();
         this.camera.position.set(0, 0, 5);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -184,10 +186,10 @@ class Game {
             window.addEventListener('mousedown', this.mouseDown.bind(this));
             window.addEventListener('resize', this.windowResize.bind(this));
             window.addEventListener('wheel', this.mouseWheel.bind(this));
-            (0, deck_1.shuffle)(this.dungeonDeck.getCards());
             this.addChild(this.dungeonScene);
             const card = new card_1.CardData(0, 2);
             const card_scene = new card_1.CardScene(card);
+            card_scene.createCard();
             this.addChild(card_scene);
         }, (delta) => {
             this.updateEntities(delta);
@@ -199,4 +201,4 @@ class Game {
 }
 const game = new Game();
 game.start();
-//# sourceMappingURL=scoundrel.js.map
+//# sourceMappingURL=game.js.map

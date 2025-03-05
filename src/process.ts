@@ -15,7 +15,7 @@ export class Process {
     public last_time_stamp: number = 0.0;
     
     /* Singleton instance */
-    private static instance: Process;
+    private static _instance: Process;
     
     private constructor() {}
     
@@ -50,11 +50,13 @@ export class Process {
         this.game_start_time = 0;   
     }
     
-    public Start(update: (delta: number) => void, render: () => void) {
+    public start(init: () => void, update: (delta: number) => void, render: () => void) {
         this.is_running = true;
         this.last_time_stamp = performance.now();      
         this.game_start_time = this.last_time_stamp;
-            
+        
+        init();
+
         const loop = (timestamp: number) => {
             if (!this.is_running) 
                 return;
@@ -70,11 +72,11 @@ export class Process {
         requestAnimationFrame(loop);
     }
 
-    public static get_instance(): Process {
-        if (!this.instance) {
-            this.instance = new Process();
+    public static get instance(): Process {
+        if (!this._instance) {
+            this._instance = new Process();
         }
-        return this.instance;
+        return this._instance;
     }
     
     public get time(): number {

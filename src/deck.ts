@@ -1,90 +1,142 @@
-// // import { Card, SuitType, CardFactory } from './card'
+import * as THREE from 'three'
+import { CardData} from './card'
+import { Node } from './node'
+import { Suit, setPosition } from './utils'
+import { Emitter } from './event_manager'
+import { iHoverable } from './interfaces/entity';
+import { CARD_TEXTURE_MAP, TextureAtlas} from './asset_loader'
 
-// export class Deck<T extends Card> {
-//     private cards: T[] = [];
+
+
+export class DeckScene extends Node {
+   [iHoverable] = true;
+       
+   private _geometry = new THREE.PlaneGeometry(this.width, this.height);
+   private _material = new THREE.MeshBasicMaterial({
+       color: 0xffffff
+   })
+   
+
+   constructor(
+       name: string, 
+       position: THREE.Vector3, 
+       geometry: THREE.Vector2) {
+           super(name, position, geometry);
+   }
+
+   public init(): void {
+       super.init();
+       
+
+       TextureAtlas(CARD_TEXTURE_MAP, new THREE.Vector4(6,0, 524, 751))
+           .then((atlas) => {
+               this._material.map = atlas.texture;
+               this._material.needsUpdate = true;
+           })
+           .catch((error) => {
+               console.error('Error loading texture:', error);
+           });
+
+       this._mesh = new THREE.Mesh(this._geometry, this._material);
+   }
+
+   public update(delta: number): void {
+       super.update(delta);
+   }
+
+   onMouseEntered(): void {}
+   onMouseExited(): void {}
+
+   onClick(): void {
+        console.log("clicked");
+   }
+
+}
+
+export class Deck<T extends CardData> {
+    private cards: T[] = [];
+    private maxSize: number;
+
+
+    constructor(maxSize: number = Infinity) {
+        this.maxSize = maxSize;
+    }
     
-//     public add_card(card: T): void {
-//         this.cards.push(card);
-//     }
+    public addCard(card: T): void {
+        if (this.cards.length < this.maxSize) {
+            this.cards.push(card);
+        } else {
+            console.warn(`Cannot add card: deck has reached its maximum size of ${this.maxSize}`);
+        }
+    }
     
-//     public add_many(_cards: T[]): void {
-//         _cards.forEach(card => {
-//             this.add_card(card);
-//         });
-//     }
+    public addMany(_cards: T[]): void {
+        if (this.cards.length + _cards.length <= this.maxSize) {
+            _cards.forEach(card => {
+                this.addCard(card);
+            });
+        } else {
+            console.warn(`Cannot add ${_cards.length} cards: deck will exceed its maximum size of ${this.maxSize}`);
+        }
+    }
 
-//     public rm_card(card: T): void {
-//         const c = this.get_card(card);
-//         if (c) {
-//             this.cards = this.cards.filter(existingCard => existingCard !== c);}
-//     }
+    public rmCard(card: T): void {
+        const c = this.getCard(card);
+        if (c) {
+            this.cards = this.cards.filter(existingCard => existingCard !== c);
+        }
+    }
 
-//     public rm_many(_cards: T[] = this.cards): void {
-//         _cards.forEach(card => {
-//             this.rm_card(card);
-//         });
-//     }
+    public rmMany(_cards: T[] = this.cards): void {
+        _cards.forEach(card => {
+            this.rmCard(card);
+        });
+    }
     
-//     public get_card(card: T): T | undefined {
-//         for (const c of this.cards) {
-//             if (c.Suit === card.Suit && c.Rank === card.Rank) {
-//                 return c;
-//             }
-//         }
-//         return undefined;
-//     }
+    public getCard(card: T): T | undefined {
+        return this.cards.find(c => c.suit === card.suit && c.rank === card.rank);
+    }
 
-//     public get_cards(): T[] {
-//         return this.cards
-//     }
+    public getCards(): T[] {
+        return this.cards;
+    }
 
-//     __str__(): string {
-//         return `Deck contains:\n` + this.cards.map(card => card.__str__()).join("\n");    }
-// }
+    public drawCard(): T | undefined {
+        const card = this.cards.pop()
 
+        if (this.cards.length === 0) {
+            console.warn("Cannot pop: Deck is empty");
+            return undefined;
+        }
 
-// export function generate_deck(): Deck<Card> {
-//         const deck = new Deck<Card>();
-
-//         const pool = [
-//             { 
-//                 suit: SuitType.HEARTS, 
-//                 value: 9 
-//             },
-//             { 
-//                 suit: SuitType.DIAMONDS, 
-//                 value: 9 
-//             },
-//             { 
-//                 suit: SuitType.SPADES, 
-//                 value: 13 
-//             },
-//             { 
-//                 suit: SuitType.CLUBS, 
-//                 value: 13 
-//             }
-//         ];
-
-//         for (let e of pool) {
-//             for (let rank = 2; rank <= e.value + 1; rank++) {
-//                 const card = CardFactory.create(e.suit, rank);
-//                 deck.add_card(card);
-//             }
-//         }
-
-//         return deck;
-//     }
-
-// export function shuffle(cards: Card[]): Card[] {
-//     var copy: Card[] = cards
+        return card;
+    }
     
-//     for (let cid = copy.length - 1; cid > 1; cid--) {
-//         const y = Math.floor(Math.random() * cid);
-        
-//         const c_y = copy[y]
-//         copy[y] = copy[cid]
-//         copy[cid] = c_y
-//     }
+    public shuffle(): void {
+        for (let i = this.cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+        }
+    }
     
-//     return copy
-// }
+    public toString(): string {
+        return `Deck contains (${this.cards.length}/${this.maxSize}):\n` + this.cards.map(card => card.toString()).join("\n");
+    }
+}
+
+export function fillDeck(): Deck<CardData> {
+    const deck = new Deck<CardData>();
+    const pool = [
+        { suit: Suit.HEARTS, value: 9 },
+        { suit: Suit.DIAMONDS, value: 9 },
+        { suit: Suit.SPADES, value: 13 },
+        { suit: Suit.CLUBS, value: 13 }
+    ];
+    for (let e of pool) {
+        for (let rank = 2; rank <= e.value + 1; rank++) {
+            const card_data: CardData = new CardData(e.suit, rank);
+            deck.addCard(card_data);
+        }
+    }
+    return deck;
+}

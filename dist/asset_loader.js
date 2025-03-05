@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loader = void 0;
+exports.SubTexture = exports.loader = void 0;
 exports.texturePromise = texturePromise;
 const THREE = __importStar(require("three"));
 const manager = new THREE.LoadingManager();
@@ -54,4 +54,28 @@ function texturePromise(texture_path, texture_loader) {
     return texture_promise;
 }
 texturePromise.texturePromises_cache = {};
+class SubTexture {
+    constructor(texture, min, max) {
+        this.texture = null;
+        this.texture_coords = [];
+        this.texture = texture;
+        this.texture_coords[0] = new THREE.Vector2(min.x, min.y);
+        this.texture_coords[1] = new THREE.Vector2(max.x, min.y);
+        this.texture_coords[2] = new THREE.Vector2(max.x, max.y);
+        this.texture_coords[3] = new THREE.Vector2(min.x, max.y);
+    }
+    static createFromCoords(texture, coords, sprite_size) {
+        const map_w = texture.image.width;
+        const map_h = texture.image.height;
+        const min = new THREE.Vector2((coords.x * sprite_size.x) / map_w, (coords.y * sprite_size.y) / map_h);
+        const max = new THREE.Vector2(((coords.x + 1) * sprite_size.x) / map_w, ((coords.y + 1) * sprite_size.y) / map_h);
+        const newTexture = texture.clone();
+        newTexture.offset.set(min.x, min.y);
+        newTexture.repeat.set(max.x - min.x, max.y - min.y);
+        newTexture.minFilter = THREE.NearestFilter;
+        newTexture.magFilter = THREE.NearestFilter;
+        return newTexture;
+    }
+}
+exports.SubTexture = SubTexture;
 //# sourceMappingURL=asset_loader.js.map

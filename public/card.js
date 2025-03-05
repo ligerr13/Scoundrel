@@ -32,68 +32,93 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CardScene = exports.Suit = void 0;
+exports.CardScene = exports.CardData = void 0;
 const THREE = __importStar(require("three"));
 const asset_loader_1 = require("./asset_loader");
-const CARD_TEXTURE_MAP = '../src/assets/cards.png';
-var Suit;
-(function (Suit) {
-    Suit[Suit["HEARTS"] = 0] = "HEARTS";
-    Suit[Suit["DIAMONDS"] = 1] = "DIAMONDS";
-    Suit[Suit["SPADES"] = 2] = "SPADES";
-    Suit[Suit["CLUBS"] = 3] = "CLUBS";
-})(Suit || (exports.Suit = Suit = {}));
-class CardScene extends THREE.Mesh {
+const three_1 = require("three");
+const utils_1 = require("./utils");
+const node_1 = require("./node");
+const entity_1 = require("./interfaces/entity");
+class CardData {
     constructor(suit, rank) {
-        super();
-        this.geometry = new THREE.PlaneGeometry(0.57 * 2, 0.88 * 2);
-        this.material = new THREE.MeshBasicMaterial({
-            map: null,
-            color: 0xffffff,
-            transparent: true,
-            side: THREE.DoubleSide
-        });
+        this._state = utils_1.CardState.DECK;
         this._suit = suit;
         this._rank = rank;
-        this.position.set(THREE.MathUtils.randFloat(-2, 2), THREE.MathUtils.randFloat(-2, 2), 0);
-        const card_mesh_promise = (0, asset_loader_1.texturePromise)(CARD_TEXTURE_MAP, asset_loader_1.loader);
-        card_mesh_promise.then((texture) => {
-            const sprite_size = new THREE.Vector2(524, 751);
-            const coords = new THREE.Vector2(suit, rank);
-            const subTexture = asset_loader_1.SubTexture.createFromCoords(texture, coords, sprite_size);
-            this._texture = subTexture;
-            this.ready();
-        })
-            .catch((error) => {
-            console.error('Failed to load texture:', error);
-        });
-    }
-    ready() {
-        if (this._texture) {
-            this.material.map = this._texture;
-            this.material.needsUpdate = true;
+        switch (this._suit) {
+            case utils_1.Suit.HEARTS:
+                this._type = utils_1.CardType.POTION;
+                break;
+            case utils_1.Suit.CLUBS:
+            case utils_1.Suit.SPADES:
+                this._type = utils_1.CardType.MONSTER;
+                break;
+            case utils_1.Suit.DIAMONDS:
+                this._type = utils_1.CardType.WEAPON;
+                break;
+            default:
+                break;
         }
     }
-    update(delta) {
-        this.rotation.y += 1 * delta;
-    }
-    render() { }
-    onMouseEntered() {
-        this.material.color.set(0xff0000);
-    }
-    onMouseExited() {
-        this.material.color.set(0xffffff);
-    }
-    get Suit() {
+    get suit() {
         return this._suit;
     }
-    get Rank() {
+    get rank() {
         return this._rank;
     }
-    get Texture() {
-        return this._texture;
+    toString() {
+        return `Suit: ${this.suit}, Rank: ${this._rank}, Type: ${this._type}`;
+    }
+}
+exports.CardData = CardData;
+class CardScene extends node_1.Node {
+    get suit() {
+        if (!this.card_data)
+            return 0;
+        return this.card_data.suit;
+    }
+    get rank() {
+        if (!this.card_data)
+            return 0;
+        return this.card_data.rank;
+    }
+    constructor(name, position, geometry, card_data) {
+        super(name, position, geometry);
+        this[_a] = true;
+        this._geometry = new three_1.PlaneGeometry(this.width, this.height);
+        this._material = new three_1.MeshBasicMaterial({
+            color: 0xffffff
+        });
+        this.card_data = card_data;
+    }
+    init() {
+        super.init();
+        (0, asset_loader_1.TextureAtlas)(asset_loader_1.CARD_TEXTURE_MAP, new THREE.Vector4(this.suit, this.rank, 524, 751))
+            .then((atlas) => {
+            this._material.map = atlas.texture;
+            this._material.needsUpdate = true;
+        })
+            .catch((error) => {
+            console.error('Error loading texture:', error);
+        });
+        this._mesh = new three_1.Mesh(this._geometry, this._material);
+    }
+    update(delta) {
+        super.update(delta);
+    }
+    onMouseEntered() {
+        console.log("Card vagyok entered", this.mesh.material);
+        if (this.mesh.material) {
+            this._material.color.set(0xD32A37);
+        }
+    }
+    onMouseExited() {
+        if (this.mesh.material) {
+            this._material.color.set(0xffffff);
+        }
     }
 }
 exports.CardScene = CardScene;
+_a = entity_1.iHoverable;
 //# sourceMappingURL=card.js.map

@@ -38,10 +38,11 @@ class Process {
         this.last_requested_id = undefined;
         this.game_start_time = 0;
     }
-    Start(update, render) {
+    start(init, update, render) {
         this.is_running = true;
         this.last_time_stamp = performance.now();
         this.game_start_time = this.last_time_stamp;
+        init();
         const loop = (timestamp) => {
             if (!this.is_running)
                 return;
@@ -52,11 +53,11 @@ class Process {
         };
         requestAnimationFrame(loop);
     }
-    static get_instance() {
-        if (!this.instance) {
-            this.instance = new Process();
+    static get instance() {
+        if (!this._instance) {
+            this._instance = new Process();
         }
-        return this.instance;
+        return this._instance;
     }
     get time() {
         return this.last_time_stamp - this.game_start_time;

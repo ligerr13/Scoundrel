@@ -1,36 +1,28 @@
-import { TextureLoader, Texture } from "three";
+import * as THREE from 'three';
 
+export enum Suit {
+    HEARTS = 0,
+    DIAMONDS = 1,
+    SPADES = 2,
+    CLUBS = 3
+}
+export enum CardState {
+    DECK,
+    HAND,
+    TABLE,
+    DISCARD_PILE
+}
 
+export enum CardType {
+    POTION,
+    WEAPON,
+    MONSTER,
+}
 
-export class ScoundrelTexture {
-    private static instance: ScoundrelTexture;
-    private textures: Map<string, Texture> = new Map();
-    private loader: TextureLoader = new TextureLoader();
+export function setPosition(actor: THREE.Object3D, x: number, y: number, z: number): void {
+    actor.position.set(x, y, z);
+}
 
-    private constructor() {}
-
-    public static getInstance(): ScoundrelTexture {
-        if (!ScoundrelTexture.instance) {
-            ScoundrelTexture.instance = new ScoundrelTexture();
-        }
-        return ScoundrelTexture.instance;
-    }
-
-    public async loadTexture(name: string, path: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.loader.load(
-                path,
-                (texture) => {
-                    this.textures.set(name, texture);
-                    resolve();
-                },
-                undefined,
-                (error) => reject(error)
-            );
-        });
-    }
-
-    public getTexture(name: string): Texture | undefined {
-        return this.textures.get(name);
-    }
+function instanceOfA(object: any): boolean {
+    return 'member' in object;
 }

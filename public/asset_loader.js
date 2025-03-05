@@ -33,11 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SubTexture = exports.loader = void 0;
+exports.SubTexture = exports.CARD_TEXTURE_MAP = void 0;
 exports.texturePromise = texturePromise;
+exports.TextureAtlas = TextureAtlas;
 const THREE = __importStar(require("three"));
+// Állandó a textúra elérési úthoz
+exports.CARD_TEXTURE_MAP = '../src/assets/cards.png';
 const manager = new THREE.LoadingManager();
-exports.loader = new THREE.TextureLoader(manager);
 function texturePromise(texture_path, texture_loader) {
     let texture_promise;
     if (texturePromise.texturePromises_cache[texture_path] !== undefined) {
@@ -54,11 +56,15 @@ function texturePromise(texture_path, texture_loader) {
     return texture_promise;
 }
 texturePromise.texturePromises_cache = {};
+// A szubtextúra osztálya
 class SubTexture {
+    get texture() {
+        return this._texture;
+    }
     constructor(texture, min, max) {
-        this.texture = null;
+        this._texture = null;
         this.texture_coords = [];
-        this.texture = texture;
+        this._texture = texture;
         this.texture_coords[0] = new THREE.Vector2(min.x, min.y);
         this.texture_coords[1] = new THREE.Vector2(max.x, min.y);
         this.texture_coords[2] = new THREE.Vector2(max.x, max.y);
@@ -74,8 +80,22 @@ class SubTexture {
         newTexture.repeat.set(max.x - min.x, max.y - min.y);
         newTexture.minFilter = THREE.NearestFilter;
         newTexture.magFilter = THREE.NearestFilter;
-        return newTexture;
+        return new SubTexture(newTexture, min, max);
     }
 }
 exports.SubTexture = SubTexture;
+function TextureAtlas(texturePath, region) {
+    const loader = new THREE.TextureLoader(manager);
+    return new Promise((resolve, reject) => {
+        const cardMeshPromise = texturePromise(texturePath, loader);
+        cardMeshPromise.then((texture) => {
+            const sprite_size = new THREE.Vector2(region.z, region.w);
+            const coords = new THREE.Vector2(region.x, region.y);
+            const subTexture = SubTexture.createFromCoords(texture, coords, sprite_size);
+            resolve(subTexture);
+        }).catch((error) => {
+            reject(new Error('Error occurred while loading texture: ' + error.message));
+        });
+    });
+}
 //# sourceMappingURL=asset_loader.js.map

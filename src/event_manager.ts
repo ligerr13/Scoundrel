@@ -1,37 +1,21 @@
-import { IEventListener, IHoverable } from './interfaces/entity';
+import { iEmitter, EventMap, EventKey, EventReceiver } from './interfaces/entity';
+import EventEmitter from 'eventemitter3';
 
-export const EventType = {
-    MOUSE_ENTERED: "mouse.entered",
-    MOUSE_EXITED: "mouse.exited",
-} as const;
 
-type EventTypeKeys = keyof typeof EventType;
-type EventTypeValues = (typeof EventType)[EventTypeKeys];
 
-export class EventManager {
-    private listeners: Map<EventTypeValues, IEventListener[]> = new Map();
 
-    subscribe(eventType: EventTypeValues, listener: IEventListener): void {
-        if (!this.listeners.has(eventType)) {
-            this.listeners.set(eventType, []);
-        }
-        this.listeners.get(eventType)?.push(listener);
+export class Emitter<T extends EventMap> implements iEmitter<T> {
+    private emitter = new EventEmitter();
+
+    on<K extends EventKey<T>>(eventName: K, fn: EventReceiver<T[K]>) {
+        this.emitter.on(eventName, fn);
     }
 
-    unsubscribe(eventType: EventTypeValues, listener: IEventListener): void {
-        const listeners = this.listeners.get(eventType);
-        if (listeners) {
-            const index = listeners.indexOf(listener);
-            if (index !== -1) {
-                listeners.splice(index, 1);
-            }
-        }
+    off<K extends EventKey<T>>(eventName: K, fn: EventReceiver<T[K]>) {
+        this.emitter.off(eventName, fn);
     }
 
-    notify(eventType: EventTypeValues, data: any): void {
-        const listeners = this.listeners.get(eventType);
-        if (listeners) {
-            listeners.forEach(listener => listener.update(data));
-        }
+    emit<K extends EventKey<T>>(eventName: K, params: T[K]) {
+        this.emitter.emit(eventName, params);
     }
 }

@@ -33,22 +33,45 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CardScene = exports.Suit = void 0;
+exports.CardScene = exports.CardData = void 0;
 const THREE = __importStar(require("three"));
 const asset_loader_1 = require("./asset_loader");
+const utils_1 = require("./utils");
 const CARD_TEXTURE_MAP = '../src/assets/cards.png';
-var Suit;
-(function (Suit) {
-    Suit[Suit["HEARTS"] = 0] = "HEARTS";
-    Suit[Suit["DIAMONDS"] = 1] = "DIAMONDS";
-    Suit[Suit["SPADES"] = 2] = "SPADES";
-    Suit[Suit["CLUBS"] = 3] = "CLUBS";
-})(Suit || (exports.Suit = Suit = {}));
-class CardScene extends THREE.Mesh {
+class CardData {
     constructor(suit, rank) {
+        this.state = utils_1.CardState.DECK;
+        this.suit = suit;
+        this.rank = rank;
+        switch (this.suit) {
+            case utils_1.Suit.HEARTS:
+                this.type = utils_1.CardType.POTION;
+                break;
+            case utils_1.Suit.CLUBS:
+            case utils_1.Suit.SPADES:
+                this.type = utils_1.CardType.MONSTER;
+                break;
+            case utils_1.Suit.DIAMONDS:
+                this.type = utils_1.CardType.WEAPON;
+                break;
+            default:
+                break;
+        }
+    }
+    get Suit() {
+        return this.suit;
+    }
+    get Rank() {
+        return this.rank;
+    }
+    toString() {
+        return `Suit: ${this.Suit}, Rank: ${this.rank}, Type: ${this.type}`;
+    }
+}
+exports.CardData = CardData;
+class CardScene extends THREE.Mesh {
+    constructor(card_data) {
         super();
-        this._suit = null;
-        this._rank = null;
         this.geometry = new THREE.PlaneGeometry(0.57 * 2, 0.88 * 2);
         this.material = new THREE.MeshBasicMaterial({
             map: null,
@@ -56,32 +79,31 @@ class CardScene extends THREE.Mesh {
             transparent: true,
             side: THREE.DoubleSide
         });
-        this._suit = suit;
-        this._rank = rank;
+        this.card_data = card_data;
+    }
+    createCard() {
         this.position.set(THREE.MathUtils.randFloat(-2, 2), THREE.MathUtils.randFloat(-2, 2), 0);
         const card_mesh_promise = (0, asset_loader_1.texturePromise)(CARD_TEXTURE_MAP, asset_loader_1.loader);
-        card_mesh_promise
-            .then((texture) => {
-            console.log('Texture loaded successfully:', texture);
+        card_mesh_promise.then((texture) => {
+            var _a, _b;
+            const sprite_size = new THREE.Vector2(524, 751);
+            const coords = new THREE.Vector2((_a = this.card_data) === null || _a === void 0 ? void 0 : _a.Suit, (_b = this.card_data) === null || _b === void 0 ? void 0 : _b.Rank);
+            const subTexture = asset_loader_1.SubTexture.createFromCoords(texture, coords, sprite_size);
+            this._texture = subTexture;
+            this.ready();
         })
             .catch((error) => {
             console.error('Failed to load texture:', error);
         });
-        console.log(this._texture);
     }
     ready() {
         if (this._texture) {
-            console.log("wooooo");
             this.material.map = this._texture;
             this.material.needsUpdate = true;
         }
     }
-    // Hiba esetén
-    onTextureError() {
-        console.error("There was an error loading the texture.");
-    }
     update(delta) {
-        this.rotation.y += 1 * delta;
+        // this.rotation.y += 1 * delta;
     }
     render() { }
     onMouseEntered() {
@@ -89,12 +111,6 @@ class CardScene extends THREE.Mesh {
     }
     onMouseExited() {
         this.material.color.set(0xffffff);
-    }
-    get Suit() {
-        return this._suit;
-    }
-    get Rank() {
-        return this._rank;
     }
     get Texture() {
         return this._texture;
